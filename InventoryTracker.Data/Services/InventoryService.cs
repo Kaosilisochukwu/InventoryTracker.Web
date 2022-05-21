@@ -61,7 +61,7 @@ namespace InventoryTracker.Data.Services
 
         public async Task DeleteAsync(int id)
         {
-            var inventory = await context.Inventories.Include(x => x.Product).Include(x => x.WareHouse).FirstOrDefaultAsync(x => x.Id == id);
+            var inventory = await context.Inventories.Include(x => x.Product).Include(x => x.WareHouse).FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (inventory == null) throw new Exception("Inventory does not exist");
             var transaction = new AddInventoryTransactionDTO
             {
@@ -86,7 +86,7 @@ namespace InventoryTracker.Data.Services
 
         public async Task<InventoryDTO> GetAsync(int id)
         {
-            var inventory = await context.Inventories.Include(x => x.Product).Include(x => x.WareHouse).FirstOrDefaultAsync(x => x.Id == id);
+            var inventory = await context.Inventories.Include(x => x.Product).Include(x => x.WareHouse).FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (inventory == null) throw new Exception("Inventory does not exist");
             return mapper.Map<InventoryDTO>(inventory);
         }

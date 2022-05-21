@@ -22,7 +22,7 @@ namespace InventoryTracker.Data.Services
         }
         public async Task<int> AddAsync(WareHouseDTO model)
         {
-            var existingWarehouse = await context.WareHouses.FirstOrDefaultAsync(x => x.Name.ToLower() == model.Name.ToLower());
+            var existingWarehouse = await context.WareHouses.FirstOrDefaultAsync(x => x.Name.ToLower() == model.Name.ToLower() && !x.IsDeleted);
             if (existingWarehouse != null) throw new Exception($"Warehouse with name {model.Name} already exist");
             var warehouse = mapper.Map<WareHouse>(model);
             warehouse.DateAdded = DateTime.Now;
@@ -33,9 +33,15 @@ namespace InventoryTracker.Data.Services
 
         public async Task DeleteAsync(int id)
         {
-            var warehouse = await context.WareHouses.FirstOrDefaultAsync(x => x.Id == id);
+            var warehouse = await context.WareHouses.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (warehouse == null) throw new Exception("Warehouse does not exist");
-            warehouse.IsDeleted = true;
+            warehouse.IsDeleted = true; 
+            var inventoriesWithWarehouse = await context.Inventories.Where(x => x.WareHouseId == warehouse.Id).ToListAsync();
+            if (inventoriesWithWarehouse?.Any() ?? false)
+            {
+                inventoriesWithWarehouse.ForEach(x => x.IsDeleted = true);
+                context.UpdateRange(inventoriesWithWarehouse);
+            }
             context.Update(warehouse);
             await context.SaveChangesAsync();
         }

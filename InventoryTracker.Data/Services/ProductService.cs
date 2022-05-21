@@ -3,11 +3,6 @@ using InventoryTracker.Data.Interfaces;
 using InventoryTracker.Domain.DTOs;
 using InventoryTracker.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace InventoryTracker.Data.Services
 {
@@ -23,7 +18,7 @@ namespace InventoryTracker.Data.Services
         }
         public async Task<int> AddAsync(ProductDTO model)
         {
-            var existingProduct = await context.Products.FirstOrDefaultAsync(x => x.Name.ToLower() == model.Name.ToLower());
+            var existingProduct = await context.Products.FirstOrDefaultAsync(x => x.Name.ToLower() == model.Name.ToLower() && !x.IsDeleted);
             if (existingProduct != null) throw new Exception($"Product with name {model.Name} already exist");
             var product = mapper.Map<Product>(model);
             product.DateAdded = DateTime.Now;
@@ -34,9 +29,15 @@ namespace InventoryTracker.Data.Services
 
         public async Task DeleteAsync(int id)
         {
-            var Product = await context.Products.FirstOrDefaultAsync(x => x.Id == id);
+            var Product = await context.Products.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (Product == null) throw new Exception("Product does not exist");
             Product.IsDeleted = true;
+            var inventoriesWithProducts = await context.Inventories.Where(x => x.ProductId == Product.Id).ToListAsync();
+            if(inventoriesWithProducts?.Any() ?? false)
+            {
+                inventoriesWithProducts.ForEach(x => x.IsDeleted = true);
+                context.UpdateRange(inventoriesWithProducts);
+            }
             context.Update(Product);
             await context.SaveChangesAsync();
         }
@@ -49,7 +50,7 @@ namespace InventoryTracker.Data.Services
 
         public async Task<ProductDTO> GetAsync(int id)
         {
-            var inventoryTransactions = await context.Products.FirstOrDefaultAsync(x => x.Id == id);
+            var inventoryTransactions = await context.Products.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (inventoryTransactions == null) throw new Exception("Product does not exist");
             return mapper.Map<ProductDTO>(inventoryTransactions);
         }

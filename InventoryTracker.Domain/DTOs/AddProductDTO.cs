@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace InventoryTracker.Domain.DTOs
 {
@@ -16,6 +11,7 @@ namespace InventoryTracker.Domain.DTOs
         public string Description { get; set; }
 
         [Range(1, 1000000000, ErrorMessage = "The input for UnitPrice is out of range")]
+        [Required(ErrorMessage = "The Unit price of the product added is required")]
         public decimal UnitPrice { get; set; }
     }
 }
