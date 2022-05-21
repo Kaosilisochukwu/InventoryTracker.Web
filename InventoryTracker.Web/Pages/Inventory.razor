@@ -1,0 +1,136 @@
+﻿@page "/inventory"
+@page "/inventory/{id:int}"
+
+@using InventoryTracker.Domain.DTOs
+@using InventoryTracker.Data.Interfaces
+
+
+@inject NavigationManager NavigationManager
+@inject IJSRuntime jsRuntime
+@inject IInventoryService inventoryService
+@inject IProductService productService
+@inject IWarehouseService warehouseService
+
+
+<PageTitle>inventorys</PageTitle>
+
+<div class="col-12">
+    <h3><b>Enter Inventory Information</b></h3>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p><em style="color:red; font-size: 20px;">@Message</em></p>
+    }
+
+    <EditForm Model="@inventory" OnValidSubmit="@Save">
+        <DataAnnotationsValidator />
+
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Warehouse :</label>
+            <InputSelect @bind-Value=inventory.WareHouseId>
+                @foreach (var warehouse in warehouses)
+                {
+                    <option value="@warehouse.Id">@warehouse.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <br />
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Product :</label>
+            <InputSelect @bind-Value=inventory.ProductId>
+                @foreach (var product in products)
+                {
+                    <option value="@product.Id">@product.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <br />   <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Quantity :</label>
+            <InputNumber class="form-control col-3" @bind-Value="inventory.StockCount" placeholder="Stock Count" />
+            &nbsp;<ValidationMessage For="@(() => inventory.StockCount)" />
+        </div>
+        <br />
+        <div>
+            <span class="col-2"></span>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <span>&nbsp;</span>
+            <a href="inventories" class=" btn btn-success">Cancel</a>
+        </div>
+    </EditForm>
+</div>
+
+
+
+@code {
+    public InventoryDTO inventory { get; set; } = new InventoryDTO();
+
+    public string Message { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+
+
+    public IEnumerable<WareHouseDTO> warehouses { get; set; } = new List<WareHouseDTO>();
+    public IEnumerable<ProductDTO> products { get; set; } = new List<ProductDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        warehouses = await warehouseService.GetAsync();
+        products = await productService.GetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Id > 0)
+            {
+                try
+                {
+                    inventory = await inventoryService.GetAsync(Id);
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    Message = ex.Message;
+                    StateHasChanged();
+                }
+            }
+
+        }
+    }
+
+    void goToProduct()
+    {
+        NavigationManager.NavigateTo("/inventory", true);
+    }
+    async Task Save()
+    {
+        try
+        {
+            var result = 0;
+            if (Id > 0)
+                result = await inventoryService.UpdateAsync(inventory);
+            else
+                result = await inventoryService.AddAsync(inventory);
+
+            if (result > 0)
+            {
+                this.Message = "Product Saved Successfully";
+                StateHasChanged();
+                Thread.Sleep(3000);
+                NavigationManager.NavigateTo("/inventories");
+            }
+            else
+            {
+                this.Message = "There was a problem saving product";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            this.Message = ex.Message;
+            StateHasChanged();
+        }
+    }
+}
+

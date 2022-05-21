@@ -1,0 +1,119 @@
+﻿@page "/product"
+@page "/product/{id:int}"
+@using InventoryTracker.Domain.DTOs
+@inject NavigationManager NavigationManager
+@inject IJSRuntime jsRuntime
+@using InventoryTracker.Data.Interfaces
+@inject IProductService productService
+
+<PageTitle>Products</PageTitle>
+
+<div class="col-12">
+    <h3><b>Enter Product Information</b></h3>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p><em style="color:red; font-size: 20px;">@Message</em></p>
+    }
+
+    <EditForm Model="@product" OnValidSubmit="@Save">
+        <DataAnnotationsValidator />
+
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Name :</label>
+            <input class="form-control col-3" @bind="product.Name" placeholder="Name" />
+            &nbsp;<ValidationMessage For="@(() => product.Name)" />
+        </div>
+        <br />
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Description :</label>
+            <InputTextArea class="form-control col-3" @bind-Value="product.Description" placeholder="Description" />
+            &nbsp;<ValidationMessage For="@(() => product.Description)" />
+        </div>
+        <br />
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Unit Price :</label>
+            <InputNumber class="form-control col-3" @bind-Value="product.UnitPrice" placeholder="Unit Price" />
+            &nbsp;<ValidationMessage For="@(() => product.UnitPrice)" />
+        </div>
+        <br />
+        <div>
+            <span class="col-2"></span>
+            @if (saving)
+            {
+                <input type="" class="btn btn-primary" value="Saving..." />
+            }
+            else
+            {
+                <input type="submit" class="btn btn-primary" value="Save" />
+            }
+            <span>&nbsp;</span>
+            <a href="products" class=" btn btn-success">Cancel</a>
+        </div>
+    </EditForm>
+</div>
+
+
+@code {
+    public ProductDTO product { get; set; } = new ProductDTO();
+    public string Message { get; set; } = null;
+    [Parameter]
+    public int Id { get; set; }
+    private bool saving = false;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Id > 0)
+            {
+                try
+                {
+                    product = await productService.GetAsync(Id);
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    Message = ex.Message;
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    void goToProduct()
+    {
+        NavigationManager.NavigateTo("/product", true);
+    }
+    async Task Save()
+    {
+        try
+        {
+            saving = true;
+            var result = 0;
+            if (Id > 0)
+                result = await productService.UpdateAsync(product);
+            else
+                result = await productService.AddAsync(product);
+
+            if (result > 0)
+            {
+                this.Message = "Product Saved Successfully";
+                StateHasChanged();
+                Thread.Sleep(3000);
+                NavigationManager.NavigateTo("/products");
+            }
+            else
+            {
+                this.Message = "There was a problem saving product";
+                StateHasChanged();
+            }
+            saving = false;
+        }
+        catch (Exception ex)
+        {
+            this.Message = ex.Message;
+            StateHasChanged();
+        }
+    }
+}

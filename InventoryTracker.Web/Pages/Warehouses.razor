@@ -1,0 +1,100 @@
+﻿@page "/warehouses"
+
+@using InventoryTracker.Domain.DTOs
+@using InventoryTracker.Data.Interfaces
+
+@inject NavigationManager NavigationManager
+@inject IWarehouseService warehoueService
+
+<div style="display: flex; justify-content: space-between; padding: 15px;">
+
+    <h3>Warehouses</h3>
+    <button class="btn btn-primary" @onclick="goToWarehouse">Add</button>
+</div>
+
+@if (isLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p><em style="color:red; font-size: 20px;">@Message</em></p>
+    }
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Postal Code</th>
+                <th>Address</th>
+                <th>Email Address</th>
+                <th>Phone Number</th>
+                <th>Date Added</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var warehouse in WareHouses)
+            {
+                <tr>
+                    <td>@warehouse.Name</td>
+                    <td>@warehouse.PostalCode</td>
+                    <td>@warehouse.Address</td>
+                    <td>@warehouse.Email</td>
+                    <td>@warehouse.PhoneNumber</td>
+                    <td>@warehouse.DateAdded</td>
+                    <td><button class="btn btn-primary" @onclick="() => goToEdit(warehouse.Id)">Edit</button></td>
+                    <td><button class="btn btn-danger" @onclick="() => delete(warehouse.Id)">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+
+    public bool isLoading { get; set; } = true;
+    public string Message { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                WareHouses = await warehoueService.GetAsync();
+                this.isLoading = false;
+                this.StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Message = ex.Message;
+                StateHasChanged();
+            }
+        }
+    }
+    async void delete(int id)
+    {
+        try
+        {
+            await warehoueService.DeleteAsync(id);
+            this.WareHouses = await warehoueService.GetAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            this.Message = ex.Message;
+            this.StateHasChanged();
+        }
+    }
+    void goToWarehouse()
+    {
+        NavigationManager.NavigateTo("/warehouse");
+    }
+    void goToEdit(int id)
+    {
+        NavigationManager.NavigateTo($"/warehouse/{id}");
+    }
+    public IEnumerable<WareHouseDTO>? WareHouses { get; set; }
+}

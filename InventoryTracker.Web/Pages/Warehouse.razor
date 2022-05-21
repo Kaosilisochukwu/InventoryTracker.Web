@@ -1,0 +1,122 @@
+﻿@page "/warehouse"
+@page "/warehouse/{id:int}"
+
+@using InventoryTracker.Domain.DTOs
+@inject NavigationManager NavigationManager
+@inject IJSRuntime jsRuntime
+@using InventoryTracker.Data.Interfaces
+@inject IWarehouseService productService
+<PageTitle>WareHouses</PageTitle>
+
+<div class="col-12">
+    <h3><b>Enter Warehouse Information</b></h3>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p><em style="color:red; font-size: 20px;">@Message</em></p>
+    }
+
+    <EditForm Model="@warehouse" OnValidSubmit="@Save">
+        <DataAnnotationsValidator />
+
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Name :</label>
+            <InputText class="form-control col-3" @bind-Value="warehouse.Name" placeholder="Name" />
+            &nbsp;<ValidationMessage For="@(() => warehouse.Name)" />
+        </div>
+        <br />
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Postal Code :</label>
+            <InputText class="form-control col-3" @bind-Value="warehouse.PostalCode" placeholder="Postal Code" />
+            &nbsp;<ValidationMessage For="@(() => warehouse.PostalCode)" />
+        </div>
+        <br />
+        <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Email :</label>
+            <InputText class="form-control col-3" @bind-Value="warehouse.Email" placeholder="Email Address" />
+            &nbsp;<ValidationMessage For="@(() => warehouse.Email)" />
+        </div>
+        <br />   <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Phone Number :</label>
+            <InputText class="form-control col-3" @bind-Value="warehouse.PhoneNumber" placeholder="Phone Number" />
+            &nbsp;<ValidationMessage For="@(() => warehouse.PhoneNumber)" />
+        </div>
+        <br />   <div class="col-12 row">
+            <label class="col-2 font-weight-bold">Address :</label>
+            <InputText class="form-control col-3" @bind-Value="warehouse.Address" placeholder="Address" />
+            &nbsp;<ValidationMessage For="@(() => warehouse.Address)" />
+        </div>
+        <br />
+        <div>
+            <span class="col-2"></span>
+            <input type="submit" class="btn btn-primary" value="Save" />
+            <span>&nbsp;</span>
+            <a href="inventories" class=" btn btn-success">Cancel</a>
+        </div>
+    </EditForm>
+</div>
+
+
+
+@code {
+    public WareHouseDTO warehouse { get; set; } = new WareHouseDTO();
+
+    public string Message { get; set; } = null;
+
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                if (Id > 0)
+                {
+                    warehouse = await productService.GetAsync(Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                Message = ex.Message;
+                StateHasChanged();
+            }
+        }
+    }
+    void goToProduct()
+    {
+        NavigationManager.NavigateTo("/warehouses", true);
+    }
+    async Task Save()
+    {
+        try
+        {
+            var result = 0;
+            Message = null;
+            StateHasChanged();
+            if (Id > 0)
+                result = await productService.UpdateAsync(warehouse);
+            else
+                result = await productService.AddAsync(warehouse);
+
+            if (result > 0)
+            {
+                this.Message = "Product Saved Successfully";
+                StateHasChanged();
+                Thread.Sleep(3000);
+                NavigationManager.NavigateTo("/warehouses");
+            }
+            else
+            {
+                this.Message = "There was a problem saving product";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            this.Message = ex.Message;
+            StateHasChanged();
+        }
+    }
+}
+
