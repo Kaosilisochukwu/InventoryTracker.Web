@@ -12,7 +12,7 @@ namespace InventoryTracker.Domain.Models
         None = 1,
         Restock,
         Sell,
-        AddProduct,
+        Add,
         Delete,
         Modify
     }

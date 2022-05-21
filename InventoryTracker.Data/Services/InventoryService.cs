@@ -25,8 +25,15 @@ namespace InventoryTracker.Data.Services
             var warehouse = await context.WareHouses.FirstOrDefaultAsync(x => x.Id == model.WareHouseId && !x.IsDeleted);
             if (warehouse == null) throw new Exception("Warehouse does not exist");
             var existingInventory = context.Inventories.FirstOrDefault(x => x.WareHouseId == model.WareHouseId && x.ProductId == model.ProductId);
-            if(existingInventory != null)
+            if (existingInventory != null)
             {
+                var updateTransaction = new AddInventoryTransactionDTO
+                {
+                    Action = ActionType.Modify,
+                    WareHouseId = model.WareHouseId,
+                    ProductId = model.ProductId,
+                    Comments = $"{model.StockCount} of Product {product.Name} was Added to {warehouse.Name}"
+                };
                 if (existingInventory.IsDeleted)
                 {
                     existingInventory.StockCount = model.StockCount;
@@ -37,6 +44,8 @@ namespace InventoryTracker.Data.Services
                     existingInventory.StockCount += model.StockCount;
                 }
 
+                updateTransaction.Quantity = existingInventory.StockCount;
+                context.Add(updateTransaction);
                 existingInventory.DateModified = DateTime.Now;
                 context.Update(existingInventory);
                 return context.SaveChanges();
@@ -48,8 +57,8 @@ namespace InventoryTracker.Data.Services
             if (inventory == null) throw new Exception("Inventory does not exist");
             var transaction = new AddInventoryTransactionDTO
             {
-                Action = ActionType.AddProduct,
-                Quantity = 0,
+                Action = ActionType.Add,
+                Quantity = inventory.StockCount,
                 WareHouseId = inventory.WareHouseId,
                 ProductId = inventory.ProductId,
                 Comments = $"{model.StockCount} of Product {product.Name} was Added to {warehouse.Name}"
@@ -65,8 +74,8 @@ namespace InventoryTracker.Data.Services
             if (inventory == null) throw new Exception("Inventory does not exist");
             var transaction = new AddInventoryTransactionDTO
             {
-                Action = ActionType.AddProduct,
-                Quantity = 0,
+                Action = ActionType.Delete,
+                Quantity = inventory.StockCount,
                 WareHouseId = inventory.WareHouseId,
                 ProductId = inventory.ProductId,
                 Comments = $"Product {inventory.Product.Name} was Deleted from {inventory.WareHouse.Name}"
@@ -148,7 +157,7 @@ namespace InventoryTracker.Data.Services
             var transaction = new AddInventoryTransactionDTO
             {
                 Action = ActionType.Modify,
-                Quantity = 0,
+                Quantity = inventory.StockCount,
                 WareHouseId = inventory.WareHouseId,
                 ProductId = inventory.ProductId,
                 Comments = $"Inventory for Product {inventory.Product.Name} was modified in {inventory.WareHouse.Name}"
